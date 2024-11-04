@@ -1,70 +1,142 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import { useState, useEffect } from "react";
+import {
+  Text,
+  View,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+} from "react-native";
+import { IconButton } from "react-native-paper";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+const App = () => {
+  const [todo, setTodo] = useState("");
+  const [todoList, setTodoList] = useState([]);
 
-export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({ ios: 'cmd + d', android: 'cmd + m' })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const loadTodos = async () => {
+    try {
+      const jsonValue = await AsyncStorage.getItem("todos");
+      if (jsonValue !== null) {
+        setTodoList(JSON.parse(jsonValue));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const saveTodos = async (todos) => {
+    try {
+      const jsonValue = JSON.stringify(todos);
+      await AsyncStorage.setItem("todos", jsonValue);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    loadTodos();
+  }, []);
+
+  const handleAddTodo = () => {
+    if (todo.trim()) {
+      const newTodo = { id: Date.now().toString(), title: todo };
+      const updatedTodoList = [...todoList, newTodo];
+      setTodoList(updatedTodoList);
+      saveTodos(updatedTodoList);
+      setTodo("");
+    }
+  };
+
+  const handleDeleteTodo = (id) => {
+    const updatedTodoList = todoList.filter((todo) => todo.id !== id);
+    setTodoList(updatedTodoList);
+    saveTodos(updatedTodoList);
+  };
+
+  const renderTools = ({ item }) => (
+    <View style={styles.renderTools}>
+      <Text style={styles.textItem}>{item.title}</Text>
+      <IconButton icon="trash-can" onPress={() => handleDeleteTodo(item.id)} />
+    </View>
   );
-}
+
+  return (
+    <View style={styles.content}>
+      <Text style={styles.mainText}>Tarefas</Text>
+      <TextInput
+        style={styles.textInput}
+        placeholder="Add a new task"
+        value={todo}
+        onChangeText={(userText) => setTodo(userText)}
+      />
+      <TouchableOpacity style={styles.TouchableMain} onPress={handleAddTodo}>
+        <Text style={styles.textButton}>Adicionar Tarefa</Text>
+      </TouchableOpacity>
+      <FlatList
+        data={todoList}
+        renderItem={renderTools}
+        keyExtractor={(item) => item.id}
+      />
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  content: {
+    backgroundColor: "#fff",
+    padding: 20,
+    flex: 1,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  mainText: {
+    textAlign: "center",
+    fontWeight: "bold",
+    fontSize: 35,
+    marginVertical: 20,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  textInput: {
+    borderWidth: 2,
+    borderColor: "#CCCCCC",
+    borderRadius: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    fontSize: 20,
+  },
+  TouchableMain: {
+    backgroundColor: "#007BFF",
+    borderRadius: 50,
+    paddingVertical: 12,
+    marginVertical: 24,
+    alignItems: "center",
+  },
+  textButton: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 25,
+  },
+  renderTools: {
+    backgroundColor: "#F9F9F9",
+    borderRadius: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 12,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  textItem: {
+    fontSize: 25,
+    flex: 1,
+    color: "#000",
+    fontWeight: "400",
   },
 });
+
+export default App;
