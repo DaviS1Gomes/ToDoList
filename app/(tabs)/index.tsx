@@ -13,6 +13,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const App = () => {
   const [todo, setTodo] = useState("");
   const [todoList, setTodoList] = useState([]);
+  const [isTrashVisible, setIsTrashVisible] = useState(null);
 
   const loadTodos = async () => {
     try {
@@ -52,14 +53,23 @@ const App = () => {
     const updatedTodoList = todoList.filter((todo) => todo.id !== id);
     setTodoList(updatedTodoList);
     saveTodos(updatedTodoList);
+    setIsTrashVisible(null);
   };
 
   const renderTools = ({ item }) => (
     <View style={styles.renderTools}>
-      <Text style={styles.textItem}>{item.title}</Text>
-      <IconButton icon="trash-can" onPress={() => handleDeleteTodo(item.id)} />
+      <TouchableOpacity onPress={() => handleClick(item.id)}>
+        <Text style={styles.textItem}>{item.title}</Text>
+      </TouchableOpacity>
+      {isTrashVisible === item.id && (
+        <IconButton icon="trash-can" onPress={() => handleDeleteTodo(item.id)} />
+      )}
     </View>
   );
+
+  const handleClick = (id) => {
+    setIsTrashVisible(isTrashVisible === id ? null : id);
+  };
 
   return (
     <View style={styles.content}>
@@ -121,6 +131,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 12,
     flexDirection: "row",
+    justifyContent: 'space-between',
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: {
@@ -133,7 +144,6 @@ const styles = StyleSheet.create({
   },
   textItem: {
     fontSize: 25,
-    flex: 1,
     color: "#000",
     fontWeight: "400",
   },
